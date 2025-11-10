@@ -1,36 +1,39 @@
-import { Film, Search, SortAsc, SortDesc } from 'lucide-react';
+import React from 'react';
+import { Search, Film } from 'lucide-react';
 
-export default function Header({ query, onQueryChange, sortBy, onSortChange }) {
+const Header = ({ search, onSearchChange, sortBy, onSortChange }) => {
   return (
-    <header className="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-white/10">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="bg-red-600 text-white p-1.5 rounded-md">
-            <Film className="w-5 h-5" />
+    <header className="sticky top-0 z-20 backdrop-blur bg-black/40 border-b border-white/10">
+      <div className="max-w-6xl mx-auto px-4 py-4 flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-red-600 text-white shadow-md shadow-red-600/30">
+            <Film size={22} />
           </div>
-          <span className="font-semibold tracking-tight text-lg">FlixLite</span>
+          <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Flix Manager</h1>
         </div>
-
-        <div className="flex items-center gap-3 w-full max-w-xl">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
+        <div className="ml-auto flex items-center gap-3 w-full md:w-auto">
+          <div className="relative flex-1 md:flex-initial">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
             <input
-              value={query}
-              onChange={(e) => onQueryChange(e.target.value)}
-              placeholder="Search by title…"
-              className="w-full bg-neutral-900 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-red-600/60"
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Search movies..."
+              className="w-full md:w-72 pl-9 pr-3 py-2 rounded-md bg-white/10 border border-white/10 focus:outline-none focus:ring-2 focus:ring-red-500/60 placeholder:text-white/50"
             />
           </div>
-          <button
-            onClick={() => onSortChange(sortBy === 'rating' ? 'title' : sortBy === 'title' ? 'newest' : 'rating')}
-            className="inline-flex items-center gap-2 bg-neutral-900 border border-white/10 rounded-lg px-3 py-2 text-sm hover:bg-neutral-800"
-            title="Toggle sort: rating → title → newest"
+          <select
+            value={sortBy}
+            onChange={(e) => onSortChange(e.target.value)}
+            className="px-3 py-2 rounded-md bg-white/10 border border-white/10 focus:outline-none focus:ring-2 focus:ring-red-500/60"
           >
-            {sortBy === 'rating' ? <SortDesc className="w-4 h-4" /> : sortBy === 'title' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4 rotate-180" />}
-            <span className="hidden sm:inline">{sortBy === 'rating' ? 'Rating' : sortBy === 'title' ? 'Title' : 'Newest'}</span>
-          </button>
+            <option value="newest">Newest</option>
+            <option value="rating">Rating</option>
+            <option value="title">Title</option>
+          </select>
         </div>
       </div>
     </header>
   );
-}
+};
+
+export default Header;

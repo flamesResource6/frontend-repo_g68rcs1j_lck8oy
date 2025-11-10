@@ -1,42 +1,63 @@
-import { Edit, Trash2, Star } from 'lucide-react';
+import React from 'react';
+import { Star, Pencil, Trash2, ImageOff } from 'lucide-react';
 
-export default function MovieCard({ movie, onEdit, onDelete }) {
+const MovieCard = ({ movie, onEdit, onDelete }) => {
+  const genres = Array.isArray(movie.genres) ? movie.genres : [];
+
   return (
-    <div className="group bg-neutral-900/60 border border-white/10 rounded-xl overflow-hidden hover:border-white/20 transition-colors">
-      <div className="aspect-[3/4] bg-neutral-800 overflow-hidden">
+    <div className="group relative bg-white/5 border border-white/10 rounded-xl overflow-hidden hover:border-red-500/40 transition">
+      <div className="aspect-[2/3] bg-black/30 overflow-hidden">
         {movie.poster_url ? (
-          <img src={movie.poster_url} alt={movie.title} className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform" />
+          <img
+            src={movie.poster_url}
+            alt={movie.title}
+            className="h-full w-full object-cover group-hover:scale-105 transition duration-500"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-white/40 text-sm">No Poster</div>
+          <div className="h-full w-full flex items-center justify-center text-white/40">
+            <ImageOff />
+          </div>
         )}
       </div>
-      <div className="p-4 space-y-2">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="font-semibold leading-tight line-clamp-2">{movie.title}</h3>
-          <div className="flex items-center gap-1 text-yellow-400 shrink-0">
-            <Star className="w-4 h-4 fill-yellow-400" />
-            <span className="text-sm">{Number(movie.rating ?? 0).toFixed(1)}</span>
-          </div>
+      <div className="p-3 space-y-2">
+        <div className="flex items-start gap-2">
+          <h3 className="font-semibold line-clamp-1 flex-1">{movie.title}</h3>
+          {movie.rating !== undefined && movie.rating !== null && (
+            <span className="inline-flex items-center gap-1 text-sm px-2 py-1 rounded-md bg-yellow-500/20 text-yellow-300">
+              <Star size={14} /> {movie.rating}
+            </span>
+          )}
         </div>
-        {movie.genres?.length ? (
-          <div className="flex flex-wrap gap-1.5">
-            {movie.genres.map((g) => (
-              <span key={g} className="text-[10px] px-2 py-1 rounded-full bg-neutral-800 border border-white/10 text-white/70">
-                {g}
-              </span>
+        {genres.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {genres.map((g) => (
+              <span key={g} className="text-xs px-2 py-0.5 rounded bg-white/10 text-white/70">{g}</span>
             ))}
           </div>
-        ) : null}
-        <p className="text-sm text-white/70 line-clamp-3">{movie.description}</p>
-        <div className="pt-2 flex items-center justify-end gap-2">
-          <button onClick={() => onEdit(movie)} className="inline-flex items-center gap-1.5 text-xs bg-neutral-800 hover:bg-neutral-700 rounded-md px-3 py-1.5">
-            <Edit className="w-4 h-4" /> Edit
+        )}
+        {movie.description && (
+          <p className="text-sm text-white/70 line-clamp-3">{movie.description}</p>
+        )}
+        <div className="flex items-center gap-2 pt-1">
+          <button
+            onClick={() => onEdit(movie)}
+            className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 border border-white/10 transition"
+          >
+            <Pencil size={16} /> Edit
           </button>
-          <button onClick={() => onDelete(movie.id)} className="inline-flex items-center gap-1.5 text-xs bg-red-600/90 hover:bg-red-600 rounded-md px-3 py-1.5">
-            <Trash2 className="w-4 h-4" /> Remove
+          <button
+            onClick={() => onDelete(movie)}
+            className="px-3 py-1.5 rounded-md bg-red-600/90 hover:bg-red-600 text-white transition"
+          >
+            <Trash2 size={16} />
           </button>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default MovieCard;

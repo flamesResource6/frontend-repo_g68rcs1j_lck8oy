@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import Header from './components/Header.jsx';
-import MovieForm from './components/MovieForm.jsx';
-import MovieGrid from './components/MovieGrid.jsx';
+import React, { useEffect, useMemo, useState } from 'react';
+import Header from './components/Header';
+import MovieForm from './components/MovieForm';
+import MovieGrid from './components/MovieGrid';
 
 const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
@@ -9,129 +9,125 @@ export default function App() {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [editing, setEditing] = useState(null); // movie object when editing
-  const [query, setQuery] = useState('');
-  const [sortBy, setSortBy] = useState('newest'); // newest | rating | title
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
+  const [editing, setEditing] = useState(null);
 
-  async function fetchMovies() {
+  const fetchMovies = async () => {
+    setLoading(true);
+    setError('');
     try {
-      setLoading(true);
       const res = await fetch(`${API_BASE}/api/movies`);
+      if (!res.ok) throw new Error('Failed to load movies');
       const data = await res.json();
       setMovies(Array.isArray(data) ? data : []);
     } catch (e) {
-      setError('Unable to load movies. Please try again.');
+      setError(e.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
     fetchMovies();
   }, []);
 
-  async function addMovie(movie) {
-    setError('');
+  const submitMovie = async (payload) => {
     try {
-      const res = await fetch(`${API_BASE}/api/movies`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(movie),
-      });
-      if (!res.ok) throw new Error('Failed to add movie');
-      const newMovie = await res.json();
-      setMovies((prev) => [newMovie, ...prev]);
-    } catch (e) {
-      setError('Could not add movie. Check your inputs and try again.');
-    }
-  }
-
-  async function updateMovie(id, updates) {
-    setError('');
-    try {
-      const res = await fetch(`${API_BASE}/api/movies/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-      if (!res.ok) throw new Error('Failed to update movie');
-      const updated = await res.json();
-      setMovies((prev) => prev.map((m) => (m.id === id ? updated : m)));
+      setError('');
+      if (editing) {
+        const id = editing.id || editing._id;
+        const res = await fetch(`${API_BASE}/api/movies/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Failed to update movie');
+      } else {
+        const res = await fetch(`${API_BASE}/api/movies`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Failed to add movie');
+      }
       setEditing(null);
+      await fetchMovies();
     } catch (e) {
-      setError('Could not update movie.');
+      setError(e.message || 'Request failed');
     }
-  }
+  };
 
-  async function deleteMovie(id) {
-    setError('');
+  const requestDelete = async (movie) => {
+    const id = movie.id || movie._id;
+    if (!id) return;
+    if (!confirm(`Delete \"${movie.title}\"?`)) return;
     try {
       const res = await fetch(`${API_BASE}/api/movies/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete');
-      setMovies((prev) => prev.filter((m) => m.id !== id));
+      if (!res.ok) throw new Error('Failed to delete movie');
+      await fetchMovies();
     } catch (e) {
-      setError('Could not delete movie.');
+      setError(e.message || 'Delete failed');
     }
-  }
+  };
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    let list = q
-      ? movies.filter((m) => m.title.toLowerCase().includes(q))
-      : movies.slice();
-
-    if (sortBy === 'rating') list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    if (sortBy === 'title') list.sort((a, b) => a.title.localeCompare(b.title));
-    // newest is default order from fetch/add (created_at desc by insertion)
+    const q = search.trim().toLowerCase();
+    let list = [...movies];
+    if (q) {
+      list = list.filter((m) => m.title?.toLowerCase().includes(q));
+    }
+    if (sortBy === 'rating') {
+      list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (sortBy === 'title') {
+      list.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    } else {
+      // newest: rely on created_at if available, fallback to id string
+      list.sort((a, b) => {
+        const ad = new Date(a.created_at || 0).getTime();
+        const bd = new Date(b.created_at || 0).getTime();
+        return bd - ad;
+      });
+    }
     return list;
-  }, [movies, query, sortBy]);
+  }, [movies, search, sortBy]);
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white">
-      <Header query={query} onQueryChange={setQuery} sortBy={sortBy} onSortChange={setSortBy} />
+    <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 text-white">
+      <Header
+        search={search}
+        onSearchChange={setSearch}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+      />
 
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-20">
-        {/* Featured banner (optional Netflix vibe) */}
-        <section className="relative overflow-hidden rounded-2xl mb-8">
-          <div className="h-48 sm:h-64 md:h-80 bg-gradient-to-br from-red-600/40 via-red-500/20 to-transparent flex items-end">
-            <div className="p-6 sm:p-8">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight">
-                Your Personal Movie Library
-              </h2>
-              <p className="text-white/70 mt-2 max-w-2xl">
-                Add, edit, and curate movies like a pro. Clean UI, smooth interactions, and full control.
-              </p>
-            </div>
+      <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold">{editing ? 'Edit movie' : 'Add a new movie'}</h2>
+          <MovieForm onSubmit={submitMovie} editingMovie={editing} onCancel={() => setEditing(null)} />
+        </section>
+
+        {error && (
+          <div className="p-3 rounded-md bg-red-500/15 border border-red-500/30 text-red-200">
+            {error}
           </div>
-        </section>
+        )}
 
-        {/* Form */}
-        <section className="mb-10">
-          <MovieForm
-            key={editing ? editing.id : 'create'}
-            initialData={editing}
-            onCancel={() => setEditing(null)}
-            onSubmit={(data) =>
-              editing ? updateMovie(editing.id, data) : addMovie(data)
-            }
-          />
-          {error && (
-            <div className="mt-4 rounded-md bg-red-600/10 border border-red-600/30 p-3 text-sm text-red-300">
-              {error}
-            </div>
-          )}
-        </section>
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Library</h2>
+            <button
+              onClick={fetchMovies}
+              className="px-3 py-1.5 rounded-md bg-white/10 border border-white/10 hover:bg-white/20 transition"
+            >
+              Refresh
+            </button>
+          </div>
 
-        {/* Grid */}
-        <section>
           {loading ? (
-            <div className="text-white/70">Loading movies…</div>
+            <div className="py-16 text-center text-white/70">Loading...</div>
           ) : (
-            <MovieGrid
-              movies={filtered}
-              onEdit={setEditing}
-              onDelete={deleteMovie}
-            />
+            <MovieGrid movies={filtered} onEdit={setEditing} onDelete={requestDelete} />
           )}
         </section>
       </main>
